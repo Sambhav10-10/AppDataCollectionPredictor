@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Data Collection Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        select:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .checkbox-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 5px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-clear {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #ff5252;
+        }
+
+        .btn-features {
+            background: #a78bfa;
+            color: white;
+        }
+
+        .btn-features:hover {
+            background: #9370ff;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+            font-weight: 600;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .results-section {
+            grid-column: 1 / -1;
+        }
+
+        .results-placeholder {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .result-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .result-yes {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .result-no {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .chart-container {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .chart-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        #modelChart {
+            max-height: 400px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .modal-close {
+            font-size: 2em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .feature-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .feature-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .feature-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #errorMessage {
+            display: none;
+            padding: 15px;
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>App Data Collection Predictor</h1>
+            <p>Predict what data an app collects based on behavioral features</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Section: App Selection -->
+            <div class="section">
+                <h2>App Selection</h2>
+                <div class="form-group">
+                    <label for="appDropdown">Select an App:</label>
+                    <select id="appDropdown">
+                        <option value="">-- Select an app to auto-fill --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Right Section: Manual Mode -->
+            <div class="section">
+                <h2>Input Mode</h2>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="manualMode">
+                    <label for="manualMode" style="margin: 0;">Enable Manual Input</label>
+                </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                    When OFF: Select app from dropdown<br>
+                    When ON: Enter values manually
+                </p>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" class="status-message"></div>
+
+        <!-- Error Message -->
+        <div id="errorMessage"></div>
+
+        <!-- Loading -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Processing your prediction...</p>
+        </div>
+
+        <!-- Prediction Form -->
+        <form id="predictionForm">
+            <div class="main-content">
+                <!-- Section 1: Data Sharing & Security -->
+                <div class="section">
+                    <h2>Data Sharing & Security</h2>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="shared_with_third_parties" id="shared_with_third_parties">
+                        <label for="shared_with_third_parties">Shares with third parties</label>
+                        <span id="label-shared" class="checkbox-label">NO</span>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="used_for_advertising" id="used_for_advertising">
+                        <label for="used_for_advertising">Data used for advertising</label>
+                        <span id="label-advertising" class="checkbox-label">NO</span>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="encryption_enabled" id="encryption_enabled" checked>
+                        <label for="encryption_enabled">Encryption enabled</label>
+                        <span id="label-encryption" class="checkbox-label">YES</span>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="data_deletion_allowed" id="data_deletion_allowed">
+                        <label for="data_deletion_allowed">Data deletion allowed</label>
+                        <span id="label-deletion" class="checkbox-label">NO</span>
+                    </div>
+                </div>
+
+                <!-- Section 2: Data Collection -->
+                <div class="section">
+                    <h2>Data Collection</h2>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="collects_sensitive_data" id="collects_sensitive_data" checked>
+                        <label for="collects_sensitive_data">Collects sensitive data</label>
+                        <span id="label-sensitive" class="checkbox-label">YES</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="num_data_types_collected">Number of data types collected:</label>
+                        <input type="number" name="num_data_types_collected" id="num_data_types_collected" value="1"
+                            min="0" max="10">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="collects_multiple_types" id="collects_multiple_types">
+                        <label for="collects_multiple_types">Collects multiple types</label>
+                        <span id="label-multiple" class="checkbox-label">NO</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="num_data_types_shared">Number of data types shared:</label>
+                        <input type="number" name="num_data_types_shared" id="num_data_types_shared" value="0" min="0"
+                            max="10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group" style="margin-top: 30px;">
+                <button type="submit" class="btn-predict">Predict</button>
+                <button type="button" class="btn-clear" id="clearFormBtn">Clear Form</button>
+                <button type="button" class="btn-features" id="showFeaturesBtn">Show Features</button>
+            </div>
+        </form>
+
+        <!-- Results Section -->
+        <div class="results-section" style="margin-top: 30px;">
+            <div id="resultsPlaceholder" class="results-placeholder">
+                Select an app or enter values, then click Predict to see results
+            </div>
+            <div id="resultsContainer" style="display: none;"></div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-container" style="margin-top: 30px;">
+            <h2>Model Comparison</h2>
+            <canvas id="modelChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Features Modal -->
+    <div id="featuresModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Extracted Features</h2>
+                <span class="modal-close" id="modalClose">&times;</span>
+            </div>
+            <div id="featuresDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentAppData = null;
+        let modelChart = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, initializing...');
+            loadAppsDropdown();
+            loadModelComparison();
+            setupEventListeners();
+        });
+
+        // Load apps dropdown
+        async function loadAppsDropdown() {
+            console.log('Fetching apps from /api/apps...');
+            try {
+                const response = await fetch('/api/apps');
+                console.log('Response status:', response.status);
+
+                const data = await response.json();
+                console.log('Apps loaded:', data.count, 'apps');
+
+                if (data.status === 'success') {
+                    const dropdown = document.getElementById('appDropdown');
+                    data.apps.forEach(app => {
+                        const option = document.createElement('option');
+                        option.value = app.appId;
+                        option.textContent = `${app.display_name} (${app.appId})`;
+                        dropdown.appendChild(option);
+                    });
+                    console.log('Dropdown populated successfully');
+                }
+            } catch (error) {
+                console.error('Error loading apps:', error);
+                showErrorMessage('Failed to load apps');
+            }
+        }
+
+        // Handle app selection
+        async function handleAppSelection(e) {
+            const appId = e.target.value;
+            console.log('App selected:', appId);
+
+            if (!appId) {
+                clearForm();
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/apps/${appId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    currentAppData = data;
+                    autoFillForm(data.features);
+                    showStatusMessage(`Auto-filled from ${data.display_name}`, true);
+                    console.log('Features loaded:', data.features);
+                }
+            } catch (error) {
+                console.error('Error fetching app features:', error);
+                showErrorMessage('Error loading app data');
+            }
+        }
+
+        // Auto-fill form with features
+        function autoFillForm(features) {
+            console.log('Auto-filling form with features:', features);
+            document.getElementById('shared_with_third_parties').checked = features.shared_with_third_parties === 1;
+            document.getElementById('used_for_advertising').checked = features.used_for_advertising === 1;
+            document.getElementById('encryption_enabled').checked = features.encryption_enabled === 1;
+            document.getElementById('data_deletion_allowed').checked = features.data_deletion_allowed === 1;
+            document.getElementById('collects_sensitive_data').checked = features.collects_sensitive_data === 1;
+            document.getElementById('num_data_types_collected').value = features.num_data_types_collected;
+            document.getElementById('collects_multiple_types').checked = features.collects_multiple_types === 1;
+            document.getElementById('num_data_types_shared').value = features.num_data_types_shared;
+            updateAllToggleLabels();
+        }
+
+        // Update all toggle labels
+        function updateAllToggleLabels() {
+            const toggles = {
+                'shared_with_third_parties': 'label-shared',
+                'used_for_advertising': 'label-advertising',
+                'encryption_enabled': 'label-encryption',
+                'data_deletion_allowed': 'label-deletion',
+                'collects_sensitive_data': 'label-sensitive',
+                'collects_multiple_types': 'label-multiple'
+            };
+
+            for (const [toggleId, labelId] of Object.entries(toggles)) {
+                const isChecked = document.getElementById(toggleId).checked;
+                const label = document.getElementById(labelId);
+                label.textContent = isChecked ? 'YES' : 'NO';
+                label.style.color = isChecked ? '#22c55e' : '#ef4444';
+            }
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('predictionForm').reset();
+            document.getElementById('appDropdown').value = '';
+            document.getElementById('manualMode').checked = false;
+            currentAppData = null;
+            document.getElementById('statusMessage').classList.remove('show');
+            updateAllToggleLabels();
+            document.getElementById('resultsPlaceholder').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+            console.log('Form cleared');
+        }
+
+        // Show status message
+        function showStatusMessage(message, isSuccess) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message show ${isSuccess ? 'status-success' : 'status-error'}`;
+            console.log('Status:', message);
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            console.error('Error:', message);
+        }
+
+        // Show features modal
+        function showFeaturesModal(appData) {
+            console.log('Opening features modal');
+            const display = document.getElementById('featuresDisplay');
+            let html = '';
+
+            const featureLabels = {
+                'shared_with_third_parties': 'Shared with Third Parties',
+                'used_for_advertising': 'Used for Advertising',
+                'encryption_enabled': 'Encryption Enabled',
+                'data_deletion_allowed': 'Data Deletion Allowed',
+                'collects_sensitive_data': 'Collects Sensitive Data',
+                'num_data_types_collected': 'Number of Data Types Collected',
+                'collects_multiple_types': 'Collects Multiple Types',
+                'num_data_types_shared': 'Number of Data Types Shared'
+            };
+
+            for (const [key, value] of Object.entries(appData.features)) {
+                const displayLabel = featureLabels[key] || key;
+                const displayValue = typeof value === 'boolean' ? (value ? 'YES' : 'NO') : value;
+
+                html += `
+                    <div class="feature-item">
+                        <div class="feature-name">${displayLabel}</div>
+                        <div class="feature-value">${displayValue}</div>
+                    </div>
+                `;
+            }
+
+            display.innerHTML = html;
+            document.getElementById('featuresModal').classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('featuresModal').classList.remove('show');
+        }
+
+        // Load model comparison chart
+        async function loadModelComparison() {
+            console.log('Fetching model comparison data...');
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+
+                console.log('Model data received:', data);
+
+                if (data.status === 'success') {
+                    const canvas = document.getElementById('modelChart');
+
+                    if (!canvas) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        console.error('Canvas context not found');
+                        return;
+                    }
+
+                    const models = data.models;
+                    const bestModel = data.best_model;
+
+                    const labels = Object.keys(models);
+                    const accuracies = Object.values(models).map(v => v * 100);
+
+                    const colors = labels.map(label =>
+                        label === bestModel ? '#667eea' : '#cbd5e1'
+                    );
+
+                    console.log('Creating chart with labels:', labels, 'accuracies:', accuracies);
+
+                    if (modelChart) {
+                        modelChart.destroy();
+                    }
+
+                    modelChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Accuracy (%)',
+                                data: accuracies,
+                                backgroundColor: colors,
+                                borderColor: '#667eea',
+                                borderWidth: 2,
+                                borderRadius: 5
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        font: { size: 12, weight: 'bold' }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        callback: function (value) {
+                                            return value + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    console.log('Chart created successfully, best model: ' + bestModel);
+                }
+            } catch (error) {
+                console.error('Error loading model comparison:', error);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // App dropdown change
+            document.getElementById('appDropdown').addEventListener('change', handleAppSelection);
+
+            // Clear form button
+            document.getElementById('clearFormBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                clearForm();
+            });
+
+            // Show features button
+            document.getElementById('showFeaturesBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentAppData) {
+                    showFeaturesModal(currentAppData);
+                } else {
+                    alert('Please select an app first');
+                }
+            });
+
+            // Toggle label updates for checkboxes
+            document.querySelectorAll('input[type="checkbox"]:not(#manualMode)').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const name = e.target.name;
+                    const isChecked = e.target.checked;
+                    const labelMap = {
+                        'shared_with_third_parties': 'label-shared',
+                        'used_for_advertising': 'label-advertising',
+                        'encryption_enabled': 'label-encryption',
+                        'data_deletion_allowed': 'label-deletion',
+                        'collects_sensitive_data': 'label-sensitive',
+                        'collects_multiple_types': 'label-multiple'
+                    };
+
+                    if (labelMap[name]) {
+                        const labelEl = document.getElementById(labelMap[name]);
+                        labelEl.textContent = isChecked ? 'YES' : 'NO';
+                        labelEl.style.color = isChecked ? '#22c55e' : '#ef4444';
+                    }
+                });
+            });
+
+            // Modal close on background click
+            document.getElementById('featuresModal').addEventListener('click', (e) => {
+                if (e.target.id === 'featuresModal') {
+                    closeModal();
+                }
+            });
+
+            // Modal close button
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+
+            // Form submission
+            document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Form submitted, making prediction...');
+
+                // Get form data
+                const formData = new FormData(e.target);
+                const data = {
+                    'shared_with_third_parties': formData.get('shared_with_third_parties') ? 1 : 0,
+                    'used_for_advertising': formData.get('used_for_advertising') ? 1 : 0,
+                    'encryption_enabled': formData.get('encryption_enabled') ? 1 : 0,
+                    'data_deletion_allowed': formData.get('data_deletion_allowed') ? 1 : 0,
+                    'collects_sensitive_data': formData.get('collects_sensitive_data') ? 1 : 0,
+                    'num_data_types_collected': parseInt(formData.get('num_data_types_collected')) || 0,
+                    'collects_multiple_types': formData.get('collects_multiple_types') ? 1 : 0,
+                    'num_data_types_shared': parseInt(formData.get('num_data_types_shared')) || 0
+                };
+
+                console.log('Feature data:', data);
+
+                // Show loading
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+
+                try {
+                    const response = await fetch('/api/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    console.log('API response status:', response.status);
+
+                    const result = await response.json();
+                    console.log('Prediction result:', result);
+
+                    if (result.status === 'success') {
+                        displayResults(result.predictions);
+                        showStatusMessage('Prediction completed successfully', true);
+                    } else {
+                        showErrorMessage('Prediction error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error making prediction:', error);
+                    showErrorMessage('Error: ' + error.message);
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            });
+        }
+
+        // Display results
+        function displayResults(predictions) {
+            console.log('Displaying results:', predictions);
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            let html = '<div class="results-grid">';
+
+            for (const [label, value] of Object.entries(predictions)) {
+                const cardClass = value ? 'result-yes' : 'result-no';
+                const resultText = value ? 'YES' : 'NO';
+                html += `
+                    <div class="result-card ${cardClass}">
+                        <h3>${label}</h3>
+                        <div class="value">${resultText}</div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            resultsContainer.innerHTML = html;
+            document.getElementById('resultsPlaceholder').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>
