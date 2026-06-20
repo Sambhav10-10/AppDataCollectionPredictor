@@ -410,7 +410,10 @@ def get_app_features(appId):
 # ============================================================================
 # MAIN
 # ============================================================================
-
+# MAIN
+# ============================================================================
+# Train models when app starts (works with Gunicorn too)
+train_models()
 if __name__ == '__main__':
     print("\n" + "="*80)
     print("INITIALIZING APP DATA COLLECTION PREDICTOR")
